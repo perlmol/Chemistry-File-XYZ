@@ -1,6 +1,6 @@
 package Chemistry::File::XYZ;
 
-$VERSION = '0.10';
+$VERSION = '0.11';
 # $Id$
 
 use base qw(Chemistry::File);
@@ -11,16 +11,16 @@ use warnings;
 
 =head1 NAME
 
-Chemistry::File::XYZ
+Chemistry::File::XYZ - XYZ molecule format reader/writer
 
 =head1 SYNOPSIS
 
     use Chemistry::File::XYZ;
 
-    # read a XYZ file
+    # read an XYZ file
     my $mol = Chemistry::Mol->read("myfile.xyz");
 
-    # write a XYZ file
+    # write an XYZ file
     $mol->write("out.xyz");
 
 =cut
@@ -38,12 +38,49 @@ First line: atom count (optional)
 
 Second line: molecule name or comment (optional)
 
-All other lines: symbol, x, y, and z coordinates separated by spaces, tabs, or
-commas.
+All other lines: (symbol or atomic number), x, y, and z coordinates separated
+by spaces, tabs, or commas.
 
 If the first line doesn't look like a number, the atom count is deduced from
 the number of lines in the file. If the second line looks like it defines an
 atom, it is assumed that there was no name or comment.
+
+=head1 OUTPUT OPTIONS
+
+On writing, the default format is the following, giving H2 as an example.
+
+    2
+    Hydrogen molecule
+    H    0.0000   0.0000   0.0000
+    H    0.0000   0.7000   0.0000
+
+That is: count line, name line, and atom lines (symbol, x, y, z). These format
+can be modified by means of certain options:
+
+=over
+
+=item name
+
+Control whether or not to include the name.
+
+=item count
+
+Control whether or not to include the count line.
+
+=item symbol
+
+If false, use the atomic numbers instead of the atomic symbols.
+
+=back
+
+For example,
+
+    $mol->write("out.xyz", count => 0, name => 0, symbol => 0);
+
+gives the following output:
+
+    1    0.0000   0.0000   0.0000
+    1    0.0000   0.7000   0.0000
 
 =cut
 
@@ -61,7 +98,7 @@ sub parse_string {
         $n_atoms = shift @lines;
     }
     my $name = '';
-    unless ($lines[0] =~ /^\s*[A-Z][a-z]?([,\s]+[eE\d.+-]+){3}/) {
+    unless ($lines[0] =~ /^\s*([A-Z][a-z]?|\d{1,3})([,\s]+[eE\d.+-]+){3}/) {
         $name = shift @lines;
     }
     $n_atoms = @lines unless $n_atoms;
@@ -73,8 +110,12 @@ sub parse_string {
         $i++;
         last if $i > $n_atoms;
         $line =~ s/^\s+//;
-        my ($symbol, $x, $y, $z) = split /[\s,]+/, $line;
-        $mol->new_atom(symbol => $symbol, coords => [$x, $y, $z]);
+        my ($elem, $x, $y, $z) = split /[\s,]+/, $line;
+
+        $mol->new_atom(
+            ($elem =~ /^\d+$/ ? "Z" : "symbol") => $elem, 
+            coords => [$x, $y, $z],
+        );
     }
     return $mol;
 }
@@ -92,7 +133,7 @@ sub file_is {
 sub write_string {
     my ($class, $mol, %opts) = @_;
 
-    %opts = (count => 1, name => 1, %opts);
+    %opts = (count => 1, name => 1, symbol => 1, %opts);
 
     # header
     my $ret = '';
@@ -105,7 +146,8 @@ sub write_string {
 
     # body
     for my $atom ($mol->atoms) {
-        $ret .= sprintf "%-2s %8.4f %8.4f %8.4f\n", $atom->symbol, 
+        $ret .= sprintf "%-2s %8.4f %8.4f %8.4f\n", 
+            $opts{symbol} ? $atom->symbol : $atom->Z, 
             $atom->coords->array;
     }
     $ret;
@@ -115,7 +157,7 @@ sub write_string {
 
 =head1 VERSION
 
-0.10
+0.11
 
 =head1 SEE ALSO
 
