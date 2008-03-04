@@ -1,5 +1,8 @@
 Revision history for Perl extension Chemistry::File::XYZ
 
+0.12
+    - Change symbols into uppercase automatically.
+
 0.11  Mon Aug 2 2004
         - Also read the atomic number instead of the atomic symbol.
         - Options for writing: name, count, symbol.

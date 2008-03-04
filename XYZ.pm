@@ -1,6 +1,6 @@
 package Chemistry::File::XYZ;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 # $Id$
 
 use base qw(Chemistry::File);
@@ -111,6 +111,7 @@ sub parse_string {
         last if $i > $n_atoms;
         $line =~ s/^\s+//;
         my ($elem, $x, $y, $z) = split /[\s,]+/, $line;
+        $elem = ucfirst(lc($elem));
 
         $mol->new_atom(
             ($elem =~ /^\d+$/ ? "Z" : "symbol") => $elem, 
@@ -157,7 +158,7 @@ sub write_string {
 
 =head1 VERSION
 
-0.11
+0.12
 
 =head1 SEE ALSO
 
